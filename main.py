@@ -56,12 +56,16 @@ class Card():
 
     def log_in_function(self, number):
         while True:
+            self.number = number
             print("""1. Balance
-2. Log out
+2. Add income
+3. Do transfer
+4. Close account
+5. Log out
 0. Exit""")
             while True:
                 action = input(">")
-                if action == str(0) or action == str(1) or action == str(2):
+                if action == str(0) or action == str(1) or action == str(2) or action == str(3) or action == str(4) or action == str(5):
                     break
                 else:
                     print("Wrong action index")
@@ -70,7 +74,26 @@ class Card():
                 cur.execute("SELECT balance FROM card WHERE number = ?", (number,))
                 print("Balance: {}".format(cur.fetchone()[0]))
                 print(" ")
-            elif action == str(2):
+            elif action == str(2): #add income
+                print(" ")
+                print("Enter income: ")
+                income = int(input("> "))
+                cur.execute("UPDATE card SET balance = balance + ? WHERE number = ?", (income,number,))
+                con.commit()
+                print("Income was added!")
+                print(" ")
+            elif action == str(3): #do transfer
+                print(" ")
+                self.transfer_money(number)
+                print(" ")
+            elif action == str(4): #close account
+                print(" ")
+                cur.execute("DELETE FROM card WHERE number = ?", (number,))
+                con.commit()
+                print("The account has been closed!")
+                print(" ")
+                break
+            elif action == str(5):
                 print(" ")
                 print("You have successfully logged out!")
                 print(" ")
@@ -81,6 +104,44 @@ class Card():
                 print(" ")
                 sys.exit()
 
+    def transfer_money(self, number):
+        #self.number = number
+        print("Enter card number:")
+        receiving_card = input(">")
+        if int(receiving_card) == int(self.number):
+            print("You can't transfer money to the same account!")
+            return None
+        check_sum = 0
+        luhm_index = int(1)
+        for digit in receiving_card:
+            if luhm_index % 2 != 0:
+                digit = int(digit) * 2
+            if int(digit) > 9:
+                digit = int(digit) - 9
+            check_sum += int(digit)
+            luhm_index += 1
+        if check_sum % 10 != 0:
+            print("Probably you made a mistake in the card number. Please try again!")
+            return None
+        cur.execute("SELECT COUNT (*) FROM card WHERE number = ?", (receiving_card,))
+        is_number_taken = cur.fetchone()[0]
+        if int(is_number_taken) == 0:
+            print("Such a card does not exist.")
+            return None
+        print("Enter how much money you want to transfer:")
+        transfer_money = int(input(">"))
+        cur.execute("SELECT balance FROM card WHERE number = ?", (number,))
+        if transfer_money > int(cur.fetchone()[0]):
+            print("Not enough money!")
+            return None
+        cur.execute("UPDATE card SET balance = balance + ? WHERE number = ?", (transfer_money, receiving_card,))
+        con.commit()
+        cur.execute("UPDATE card SET balance = balance - ? WHERE number = ?", (transfer_money, self.number,))
+        con.commit()
+        print("Success!")
+
+
+#4000004700836582
 while True:
     print("""1. Create an account
 2. Log into account
@@ -133,5 +194,7 @@ while True:
 print(" ")
 print("Bye")
 print(" ")
+
+
 
 
